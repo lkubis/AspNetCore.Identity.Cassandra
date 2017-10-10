@@ -58,7 +58,7 @@ namespace AspNetCore.Identity.Cassandra
             if (user == null)
                 throw new ArgumentNullException(nameof(user));
 
-            if(login == null)
+            if (login == null)
                 throw new ArgumentNullException(nameof(login));
 
             user.AddLogin(login);
@@ -169,7 +169,7 @@ namespace AspNetCore.Identity.Cassandra
             if (user == null)
                 throw new ArgumentNullException(nameof(user));
 
-            user.NormalizedUserName = normalizedName ?? throw new ArgumentNullException(nameof(normalizedName));
+            user.NormalizedUserName = normalizedName;
             return Task.CompletedTask;
         }
 
@@ -229,7 +229,7 @@ namespace AspNetCore.Identity.Cassandra
             ThrowIfDisposed();
 
             cancellationToken.ThrowIfCancellationRequested();
-            return _mapper.SingleOrDefaultAsync<TUser>("WHERE NormalizedUserName = ?", normalizedUserName);
+            return _mapper.SingleOrDefaultAsync<TUser>("FROM users_by_username WHERE NormalizedUserName = ?", normalizedUserName);
         }
 
         public Task SetPasswordHashAsync(TUser user, string passwordHash, CancellationToken cancellationToken)
@@ -407,7 +407,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            return _mapper.SingleOrDefaultAsync<TUser>("WHERE NormalizedEmail = ?", normalizedEmail);
+            return _mapper.SingleOrDefaultAsync<TUser>("FROM users_by_email WHERE NormalizedEmail = ?", normalizedEmail);
         }
 
         public Task<string> GetNormalizedEmailAsync(TUser user, CancellationToken cancellationToken)
@@ -434,7 +434,7 @@ namespace AspNetCore.Identity.Cassandra
         }
 
         #endregion
-
+        
         #region | IDisposable
 
         private void ThrowIfDisposed()

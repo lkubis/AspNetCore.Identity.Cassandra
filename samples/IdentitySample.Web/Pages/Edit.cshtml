@@ -1,7 +1,9 @@
 ﻿@page "{id:guid}"
 @model IdentitySample.Web.Pages.EditModel
 
-@ViewData["Title"] = "Edit user";
+@{
+  ViewData["Title"] = "Edit user"; 
+}
 
 <div class="container">
   <h2>Edit account - @Model.UserId</h2>

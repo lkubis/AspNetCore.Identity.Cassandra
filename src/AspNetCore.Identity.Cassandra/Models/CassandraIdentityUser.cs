@@ -20,9 +20,7 @@ namespace AspNetCore.Identity.Cassandra.Models
         public Guid Id { get; internal set; }
 
         public string UserName { get; set; }
-        [ClusteringKey(1)]
         public string NormalizedUserName { get; internal set; }
-        [ClusteringKey(2)]
         public string NormalizedEmail { get; set; }
 
         public string Email { get; set; }

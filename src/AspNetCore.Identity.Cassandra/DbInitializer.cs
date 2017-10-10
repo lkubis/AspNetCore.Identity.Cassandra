@@ -32,12 +32,24 @@ namespace AspNetCore.Identity.Cassandra
                 UdtMap.For<SimplifiedClaim>());
 
             // Tables
-            
             var usersTable = new Table<TUser>(_session);
             usersTable.CreateIfNotExists();
 
             var rolesTable = new Table<TRole>(_session);
             rolesTable.CreateIfNotExists();
+
+            // Materialized views
+            var usersTableName = usersTable.GetTable().Name;
+            _session.Execute("CREATE MATERIALIZED VIEW IF NOT EXISTS users_by_email AS" +
+                             $" SELECT * FROM {options.KeyspaceName}.{usersTableName}" +
+                             " WHERE NormalizedEmail IS NOT NULL" +
+                             " PRIMARY KEY (NormalizedEmail, Id)");
+
+            _session.Execute("CREATE MATERIALIZED VIEW IF NOT EXISTS users_by_username AS" +
+                             $" SELECT * FROM {options.KeyspaceName}.{usersTableName}" +
+                             " WHERE NormalizedUserName IS NOT NULL" +
+                             " PRIMARY KEY (NormalizedUserName, Id)");
+
         }
     }
 }
