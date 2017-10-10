@@ -1,0 +1,14 @@
+version: '3'
+
+services:
+
+  identitysample.web:
+    image: cassandra-sample/identitysample.web:${TAG:-latest}
+    build:
+      context: ./samples/IdentitySample.Web
+      dockerfile: Dockerfile
+    depends_on:
+    - nosql.data
+
+  nosql.data:
+    image: cassandra

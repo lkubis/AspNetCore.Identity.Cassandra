@@ -1,0 +1,8 @@
+version: '3'
+
+services:
+  identitysample.web:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    ports:
+      - "5200:80"

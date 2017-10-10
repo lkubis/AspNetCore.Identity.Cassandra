@@ -1,0 +1,36 @@
+﻿@page
+@using IdentitySample.Web.Pages
+@model IndexModel
+
+
+@{
+    ViewData["Title"] = "Users";
+}
+
+<h2>Users</h2>
+<hr />
+
+<table class="table">
+  <thead>
+    <tr>
+      <td>@Html.DisplayNameFor(model => model.Users.First().Id)</td>
+      <td>@Html.DisplayNameFor(model => model.Users.First().Email)</td>
+      <td>@Html.DisplayNameFor(model => model.Users.First().Phone.Number)</td>
+      <td></td>
+    </tr>
+  </thead>
+  <tbody>
+    @foreach (var item in Model.Users)
+    {
+        <tr>
+          <td>@Html.DisplayFor(modelItem => item.Id)</td>
+          <td>@Html.DisplayFor(modelItem => item.Email)</td>
+          <td>@Html.DisplayFor(modelItem => item.Phone.Number)</td>
+          <td>
+            <a asp-page="Edit" asp-route-id="@item.Id">Edit</a>
+            @*<button type="submit" asp-page-handler="delete" asp-route-id="@item.Id">Delete</button>*@
+          </td>
+        </tr>
+    }
+  </tbody>
+</table>
