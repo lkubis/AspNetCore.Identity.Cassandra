@@ -13,11 +13,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".solution-items", ".solutio
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspNetCore.Identity.Cassandra", "src\AspNetCore.Identity.Cassandra\AspNetCore.Identity.Cassandra.csproj", "{B90B64BE-5D15-4CC5-B61B-1FA813D02315}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AspNetCore.Identity.Cassandra", "src\AspNetCore.Identity.Cassandra\AspNetCore.Identity.Cassandra.csproj", "{B90B64BE-5D15-4CC5-B61B-1FA813D02315}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{84FF8F54-DA2F-40B0-8A90-9EB37ABCA2B8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IdentitySample.Web", "samples\IdentitySample.Web\IdentitySample.Web.csproj", "{BE4357EB-47FC-4A5B-8CAD-B493A7789B9F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IdentitySample.Web", "samples\IdentitySample.Web\IdentitySample.Web.csproj", "{BE4357EB-47FC-4A5B-8CAD-B493A7789B9F}"
 EndProject
 Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{F8711A91-CD40-4C6B-BE59-56C27C6FBC65}"
 EndProject

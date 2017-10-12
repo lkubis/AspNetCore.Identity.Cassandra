@@ -1,7 +1,8 @@
 ﻿using System.Linq;
 using AspNetCore.Identity.Cassandra;
 using AspNetCore.Identity.Cassandra.Extensions;
-using IdentitySample.Web.Models;
+using IdentitySample.Web.Data;
+using IdentitySample.Web.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
@@ -44,9 +45,10 @@ namespace IdentitySample.Web
 
             services.AddMvc()
                 .WithRazorPagesRoot("/Pages")
-                .AddRazorPagesOptions(x =>
+                .AddRazorPagesOptions(options =>
                 {
-                    x.Conventions.AuthorizePage("/Index");
+                    options.Conventions.AuthorizeFolder("/Account/Manage");
+                    options.Conventions.AuthorizePage("/Account/Logout");
                 });
 
             services.AddAuthentication("myCookie")
@@ -54,6 +56,8 @@ namespace IdentitySample.Web
                 {
                     options.LoginPath = "/Account/Login";
                 });
+
+            services.AddSingleton<IEmailSender, EmailSender>();
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)

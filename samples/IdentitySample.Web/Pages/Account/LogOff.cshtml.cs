@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
+using IdentitySample.Web.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using IdentitySample.Web.Models;
 using Microsoft.AspNetCore.Identity;
 
 namespace IdentitySample.Web.Pages.Account

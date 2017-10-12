@@ -2,12 +2,12 @@
 using AspNetCore.Identity.Cassandra.Models;
 using Cassandra.Mapping.Attributes;
 
-namespace IdentitySample.Web.Models
+namespace IdentitySample.Web.Data
 {
-    [Table("roles", Keyspace = "identity")]
-    public class ApplicationRole : CassandraIdentityRole
+    [Table("users", Keyspace = "identity")]
+    public class ApplicationUser : CassandraIdentityUser
     {
-        public ApplicationRole()
+        public ApplicationUser()
             : base(Guid.NewGuid())
         {
             

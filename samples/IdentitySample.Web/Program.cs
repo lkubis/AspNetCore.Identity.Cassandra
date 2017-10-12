@@ -1,5 +1,5 @@
 ﻿using AspNetCore.Identity.Cassandra.Extensions;
-using IdentitySample.Web.Models;
+using IdentitySample.Web.Data;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 

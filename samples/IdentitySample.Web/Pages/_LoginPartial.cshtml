@@ -1,5 +1,5 @@
-﻿@using Microsoft.AspNetCore.Identity
-@using IdentitySample.Web.Models
+﻿@using IdentitySample.Web.Data
+@using Microsoft.AspNetCore.Identity
 
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
@@ -9,7 +9,7 @@
   <form asp-page="/Account/LogOff" method="post" id="logoutForm" class="navbar-right">
     <ul class="nav navbar-nav navbar-right">
       <li>
-        <a title="Manage">Hello @UserManager.GetUserName(User)!</a>
+        <a asp-page="/Account/Manage/Index" title="Manage">Hello @UserManager.GetUserName(User)!</a>
       </li>
       <li>
         <button type="submit" class="btn btn-link navbar-btn navbar-link">Log off</button>
