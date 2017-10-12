@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using IdentitySample.Web.Data;
 
-namespace IdentitySample.Pages.Account.Manage
+namespace IdentitySample.Web.Pages.Account.Manage
 {
     public class SetPasswordModel : PageModel
     {
