@@ -54,8 +54,10 @@ public class ApplicationRole : CassandraIdentityRole
 ```csharp
 public void ConfigureServices(IServiceCollection services)
 {    
+    // CassandraOptions configuration
     services.Configure<CassandraOptions>(Configuration.GetSection("CassandraOptions"));
 
+    // Cassandra ISession initialization
     services.AddCassandraSession<Cassandra.ISession>(() =>
     {
         var cluster = Cassandra.Cluster.Builder()
@@ -65,6 +67,7 @@ public void ConfigureServices(IServiceCollection services)
         return session;
     });
     
+    // Added custom Cassandra stores
     services.AddIdentity<ApplicationUser, ApplicationRole>()
         .UseCassandraStores<Cassandra.ISession>()
         .AddDefaultTokenProviders();
@@ -74,6 +77,7 @@ public void ConfigureServices(IServiceCollection services)
 ```
 
 ### Program
+Initialize Cassandra DB by calling **InitializeIdentityDb<ApplicationUser, ApplicationRole>()** method on **IWebHost** interface.
 ```csharp
 public static class Program
 {
