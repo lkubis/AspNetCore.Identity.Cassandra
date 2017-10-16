@@ -5,7 +5,7 @@ Inspired by existing [AspNetCore.Identity.RaveDB](https://github.com/ElemarJR/As
 ## Instalation
 Run the following command from the package manager console to install Cassandra identity provider.
 ```
-Install-Package AspNetCore.Identity.Cassandra
+Install-Package AspNetCore.Identity.Cassandra -Version 1.0.0-alpha1
 ```
 
 ### Create your own User and Role entities
