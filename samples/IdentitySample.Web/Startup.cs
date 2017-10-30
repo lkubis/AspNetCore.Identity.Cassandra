@@ -30,6 +30,7 @@ namespace IdentitySample.Web
         {
             services.AddOptions();
             services.Configure<CassandraOptions>(Configuration.GetSection("CassandraOptions"));
+            services.Configure<CassandraQueryOptions>(Configuration.GetSection("cassandraQueryOptions"));
 
             services.AddCassandraSession<Cassandra.ISession>(() =>
             {

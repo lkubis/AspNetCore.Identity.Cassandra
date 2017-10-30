@@ -3,7 +3,7 @@ version: '3'
 services:
 
   identitysample.web:
-    image: cassandra-sample/identitysample.web:${TAG:-latest}
+    image: cassandra-sample/identitysample.web
     build:
       context: ./samples/IdentitySample.Web
       dockerfile: Dockerfile

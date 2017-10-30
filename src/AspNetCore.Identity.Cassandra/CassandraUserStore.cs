@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using AspNetCore.Identity.Cassandra.Extensions;
 using AspNetCore.Identity.Cassandra.Models;
 using Cassandra;
 using Cassandra.Data.Linq;
 using Cassandra.Mapping;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
 
 namespace AspNetCore.Identity.Cassandra
 {
@@ -23,6 +25,7 @@ namespace AspNetCore.Identity.Cassandra
         #region | Fields
 
         private readonly IMapper _mapper;
+        private readonly IOptionsSnapshot<CassandraQueryOptions> _snapshot;
         private bool _isDisposed;
 
         #endregion
@@ -38,12 +41,14 @@ namespace AspNetCore.Identity.Cassandra
 
         public CassandraUserStore(
             TSession session,
+            IOptionsSnapshot<CassandraQueryOptions> snapshot,
             IdentityErrorDescriber errorDescriber = null)
         {
             ErrorDescriber = errorDescriber;
             Session = session ?? throw new ArgumentNullException(nameof(session));
 
             _mapper = new Mapper(session);
+            _snapshot = snapshot;
         }
 
         #endregion
@@ -181,9 +186,7 @@ namespace AspNetCore.Identity.Cassandra
             if (user == null)
                 throw new ArgumentNullException(nameof(user));
 
-            cancellationToken.ThrowIfCancellationRequested();
-
-            await _mapper.InsertAsync(user);
+            await _mapper.InsertAsync(user, queryOptions: _snapshot.AsCqlQueryOptions());
             return IdentityResult.Success;
         }
 
@@ -196,7 +199,7 @@ namespace AspNetCore.Identity.Cassandra
                 throw new ArgumentNullException(nameof(user));
 
             user.CleanUp();
-            await _mapper.UpdateAsync(user);
+            await _mapper.UpdateAsync(user, queryOptions: _snapshot.AsCqlQueryOptions());
 
             return IdentityResult.Success;
         }
@@ -209,7 +212,7 @@ namespace AspNetCore.Identity.Cassandra
             if (user == null)
                 throw new ArgumentNullException(nameof(user));
 
-            await _mapper.DeleteAsync(user);
+            await _mapper.DeleteAsync(user, queryOptions: _snapshot.AsCqlQueryOptions());
 
             return IdentityResult.Success;
         }

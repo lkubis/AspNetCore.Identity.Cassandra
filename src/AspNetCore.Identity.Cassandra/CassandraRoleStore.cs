@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using AspNetCore.Identity.Cassandra.Extensions;
 using AspNetCore.Identity.Cassandra.Models;
 using Cassandra;
 using Cassandra.Mapping;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
 
 namespace AspNetCore.Identity.Cassandra
 {
@@ -17,6 +19,7 @@ namespace AspNetCore.Identity.Cassandra
 
         private readonly IMapper _mapper;
         private bool _isDisposed;
+        private readonly IOptionsSnapshot<CassandraQueryOptions> _snapshot;
 
         #endregion
 
@@ -31,12 +34,14 @@ namespace AspNetCore.Identity.Cassandra
 
         public CassandraRoleStore(
             TSession session,
+            IOptionsSnapshot<CassandraQueryOptions> snapshot,
             IdentityErrorDescriber errorDescriber = null)
         {
             ErrorDescriber = errorDescriber;
             Session = session ?? throw new ArgumentNullException(nameof(session));
 
             _mapper = new Mapper(session);
+            _snapshot = snapshot;
         }
 
         #endregion
@@ -46,7 +51,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            await _mapper.InsertAsync(role);
+            await _mapper.InsertAsync(role, queryOptions: _snapshot.AsCqlQueryOptions());
             return IdentityResult.Success;
         }
 
@@ -58,7 +63,7 @@ namespace AspNetCore.Identity.Cassandra
             if (role == null)
                 throw new ArgumentNullException(nameof(role));
 
-            await _mapper.UpdateAsync(role);
+            await _mapper.UpdateAsync(role, queryOptions: _snapshot.AsCqlQueryOptions());
             return IdentityResult.Success;
         }
 
@@ -70,7 +75,7 @@ namespace AspNetCore.Identity.Cassandra
             if (role == null)
                 throw new ArgumentNullException(nameof(role));
 
-            await _mapper.DeleteAsync(role);
+            await _mapper.DeleteAsync(role, queryOptions: _snapshot.AsCqlQueryOptions());
             return IdentityResult.Success;
         }
 

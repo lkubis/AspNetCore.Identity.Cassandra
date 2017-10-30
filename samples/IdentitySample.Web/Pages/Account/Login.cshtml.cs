@@ -45,7 +45,7 @@ namespace IdentitySample.Web.Pages.Account
                 ModelState.AddModelError(string.Empty, "Invalid login attempt.");
             }
 
-            return RedirectToPage();
+            return Page();
         }
     }
 }

@@ -39,8 +39,11 @@ namespace IdentitySample.Web.Pages.Account
                 await _signInManager.SignInAsync(user, isPersistent: false);
                 return RedirectToPage("/Index");
             }
-           
-            return RedirectToPage();
+
+            foreach (var error in result.Errors)
+                ModelState.AddModelError(string.Empty, error.Description);
+
+            return Page();
         }
     }
 }
