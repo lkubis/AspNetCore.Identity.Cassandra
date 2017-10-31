@@ -38,10 +38,11 @@ namespace IdentitySample.Web
                     .AddContactPoints(Configuration.GetSection("CassandraNodes").GetChildren().Select(x => x.Value))
                     .Build();
                 var session = cluster.Connect();
-
                 return session;
             });
+
             services.AddIdentity<ApplicationUser, ApplicationRole>()
+                .AddCassandraErrorDescriber<CassandraErrorDescriber>()
                 .UseCassandraStores<Cassandra.ISession>()
                 .AddDefaultTokenProviders();
 

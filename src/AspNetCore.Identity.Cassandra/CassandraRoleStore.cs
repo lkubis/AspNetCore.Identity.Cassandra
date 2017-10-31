@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using AspNetCore.Identity.Cassandra.Extensions;
@@ -6,6 +7,7 @@ using AspNetCore.Identity.Cassandra.Models;
 using Cassandra;
 using Cassandra.Mapping;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace AspNetCore.Identity.Cassandra
@@ -20,12 +22,14 @@ namespace AspNetCore.Identity.Cassandra
         private readonly IMapper _mapper;
         private bool _isDisposed;
         private readonly IOptionsSnapshot<CassandraQueryOptions> _snapshot;
+        private readonly ILogger _logger;
 
         #endregion
 
         #region | Properties
 
         public IdentityErrorDescriber ErrorDescriber { get; }
+        public CassandraErrorDescriber CassandraErrorDescriber { get; }
         public TSession Session { get; }
 
         #endregion
@@ -35,27 +39,30 @@ namespace AspNetCore.Identity.Cassandra
         public CassandraRoleStore(
             TSession session,
             IOptionsSnapshot<CassandraQueryOptions> snapshot,
-            IdentityErrorDescriber errorDescriber = null)
+            ILoggerFactory loggerFactory,
+            IdentityErrorDescriber errorDescriber = null,
+            CassandraErrorDescriber cassandraErrorDescriber = null)
         {
             ErrorDescriber = errorDescriber;
+            CassandraErrorDescriber = cassandraErrorDescriber;
             Session = session ?? throw new ArgumentNullException(nameof(session));
 
             _mapper = new Mapper(session);
             _snapshot = snapshot;
+            _logger = loggerFactory.CreateLogger(typeof(CassandraRoleStore<,>).GetTypeInfo().Name);
         }
 
         #endregion
 
-        public async Task<IdentityResult> CreateAsync(TRole role, CancellationToken cancellationToken)
+        public Task<IdentityResult> CreateAsync(TRole role, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            await _mapper.InsertAsync(role, queryOptions: _snapshot.AsCqlQueryOptions());
-            return IdentityResult.Success;
+            return _mapper.TryInsertAsync(role, _snapshot.AsCqlQueryOptions(), CassandraErrorDescriber, _logger);
         }
 
-        public async Task<IdentityResult> UpdateAsync(TRole role, CancellationToken cancellationToken)
+        public Task<IdentityResult> UpdateAsync(TRole role, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
@@ -63,11 +70,10 @@ namespace AspNetCore.Identity.Cassandra
             if (role == null)
                 throw new ArgumentNullException(nameof(role));
 
-            await _mapper.UpdateAsync(role, queryOptions: _snapshot.AsCqlQueryOptions());
-            return IdentityResult.Success;
+            return _mapper.TryUpdateAsync(role, _snapshot.AsCqlQueryOptions(), CassandraErrorDescriber, _logger);
         }
 
-        public async Task<IdentityResult> DeleteAsync(TRole role, CancellationToken cancellationToken)
+        public Task<IdentityResult> DeleteAsync(TRole role, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
@@ -75,8 +81,7 @@ namespace AspNetCore.Identity.Cassandra
             if (role == null)
                 throw new ArgumentNullException(nameof(role));
 
-            await _mapper.DeleteAsync(role, queryOptions: _snapshot.AsCqlQueryOptions());
-            return IdentityResult.Success;
+            return _mapper.TryDeleteAsync(role, _snapshot.AsCqlQueryOptions(), CassandraErrorDescriber, _logger);
         }
 
         public Task<string> GetRoleIdAsync(TRole role, CancellationToken cancellationToken)

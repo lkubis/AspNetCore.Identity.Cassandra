@@ -35,5 +35,12 @@ namespace AspNetCore.Identity.Cassandra.Extensions
 
             return builder;
         }
+
+        public static IdentityBuilder AddCassandraErrorDescriber<TErrorDescriber>(
+            this IdentityBuilder builder) where TErrorDescriber : CassandraErrorDescriber
+        {
+            builder.Services.AddScoped<CassandraErrorDescriber, TErrorDescriber>();
+            return builder;
+        }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using AspNetCore.Identity.Cassandra.Extensions;
@@ -9,6 +10,7 @@ using Cassandra;
 using Cassandra.Data.Linq;
 using Cassandra.Mapping;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace AspNetCore.Identity.Cassandra
@@ -26,6 +28,7 @@ namespace AspNetCore.Identity.Cassandra
 
         private readonly IMapper _mapper;
         private readonly IOptionsSnapshot<CassandraQueryOptions> _snapshot;
+        private readonly ILogger _logger;
         private bool _isDisposed;
 
         #endregion
@@ -33,6 +36,7 @@ namespace AspNetCore.Identity.Cassandra
         #region | Properties
 
         public IdentityErrorDescriber ErrorDescriber { get; }
+        public CassandraErrorDescriber CassandraErrorDescriber { get; }
         public TSession Session { get; }
 
         #endregion
@@ -42,13 +46,17 @@ namespace AspNetCore.Identity.Cassandra
         public CassandraUserStore(
             TSession session,
             IOptionsSnapshot<CassandraQueryOptions> snapshot,
-            IdentityErrorDescriber errorDescriber = null)
+            ILoggerFactory loggerFactory,
+            IdentityErrorDescriber errorDescriber = null,
+            CassandraErrorDescriber cassandraErrorDescriber = null)
         {
             ErrorDescriber = errorDescriber;
+            CassandraErrorDescriber = cassandraErrorDescriber;
             Session = session ?? throw new ArgumentNullException(nameof(session));
 
             _mapper = new Mapper(session);
             _snapshot = snapshot;
+            _logger = loggerFactory.CreateLogger(typeof(CassandraUserStore<,>).GetTypeInfo().Name);
         }
 
         #endregion
@@ -178,7 +186,7 @@ namespace AspNetCore.Identity.Cassandra
             return Task.CompletedTask;
         }
 
-        public async Task<IdentityResult> CreateAsync(TUser user, CancellationToken cancellationToken)
+        public Task<IdentityResult> CreateAsync(TUser user, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
@@ -186,11 +194,10 @@ namespace AspNetCore.Identity.Cassandra
             if (user == null)
                 throw new ArgumentNullException(nameof(user));
 
-            await _mapper.InsertAsync(user, queryOptions: _snapshot.AsCqlQueryOptions());
-            return IdentityResult.Success;
+            return _mapper.TryInsertAsync(user, _snapshot.AsCqlQueryOptions(), CassandraErrorDescriber, _logger);
         }
 
-        public async Task<IdentityResult> UpdateAsync(TUser user, CancellationToken cancellationToken)
+        public Task<IdentityResult> UpdateAsync(TUser user, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
@@ -199,12 +206,10 @@ namespace AspNetCore.Identity.Cassandra
                 throw new ArgumentNullException(nameof(user));
 
             user.CleanUp();
-            await _mapper.UpdateAsync(user, queryOptions: _snapshot.AsCqlQueryOptions());
-
-            return IdentityResult.Success;
+            return _mapper.TryUpdateAsync(user, _snapshot.AsCqlQueryOptions(), CassandraErrorDescriber, _logger);
         }
 
-        public async Task<IdentityResult> DeleteAsync(TUser user, CancellationToken cancellationToken)
+        public Task<IdentityResult> DeleteAsync(TUser user, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
@@ -212,9 +217,7 @@ namespace AspNetCore.Identity.Cassandra
             if (user == null)
                 throw new ArgumentNullException(nameof(user));
 
-            await _mapper.DeleteAsync(user, queryOptions: _snapshot.AsCqlQueryOptions());
-
-            return IdentityResult.Success;
+            return _mapper.TryDeleteAsync(user, _snapshot.AsCqlQueryOptions(), CassandraErrorDescriber, _logger);
         }
 
         public Task<TUser> FindByIdAsync(string userId, CancellationToken cancellationToken)
