@@ -27,7 +27,7 @@ namespace AspNetCore.Identity.Cassandra
         #region | Fields
 
         private readonly IMapper _mapper;
-        private readonly IOptionsSnapshot<CassandraQueryOptions> _snapshot;
+        private readonly IOptionsSnapshot<CassandraOptions> _snapshot;
         private readonly ILogger _logger;
         private bool _isDisposed;
 
@@ -45,7 +45,7 @@ namespace AspNetCore.Identity.Cassandra
 
         public CassandraUserStore(
             TSession session,
-            IOptionsSnapshot<CassandraQueryOptions> snapshot,
+            IOptionsSnapshot<CassandraOptions> snapshot,
             ILoggerFactory loggerFactory,
             IdentityErrorDescriber errorDescriber = null,
             CassandraErrorDescriber cassandraErrorDescriber = null)

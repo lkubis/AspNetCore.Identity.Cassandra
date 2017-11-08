@@ -21,7 +21,7 @@ namespace AspNetCore.Identity.Cassandra
 
         private readonly IMapper _mapper;
         private bool _isDisposed;
-        private readonly IOptionsSnapshot<CassandraQueryOptions> _snapshot;
+        private readonly IOptionsSnapshot<CassandraOptions> _snapshot;
         private readonly ILogger _logger;
 
         #endregion
@@ -38,7 +38,7 @@ namespace AspNetCore.Identity.Cassandra
 
         public CassandraRoleStore(
             TSession session,
-            IOptionsSnapshot<CassandraQueryOptions> snapshot,
+            IOptionsSnapshot<CassandraOptions> snapshot,
             ILoggerFactory loggerFactory,
             IdentityErrorDescriber errorDescriber = null,
             CassandraErrorDescriber cassandraErrorDescriber = null)
