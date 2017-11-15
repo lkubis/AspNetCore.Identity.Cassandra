@@ -33,7 +33,20 @@ namespace AspNetCore.Identity.Cassandra.Extensions
             CassandraErrorDescriber errorDescriber,
             ILogger logger)
         {
+            
             return TryExecuteAsync(() => mapper.DeleteAsync(poco, queryOptions: queryOptions), errorDescriber, logger);
+        }
+
+        public static Task<IdentityResult> TryExecuteBatchAsync(this IMapper mapper,
+            CassandraErrorDescriber errorDescriber,
+            ILogger logger,
+            params Action<ICqlBatch>[] actions)
+        {
+            var batch = mapper.CreateBatch();
+            foreach (var a in actions)
+                a(batch);
+
+            return TryExecuteAsync(() => mapper.ExecuteAsync(batch), errorDescriber, logger);
         }
 
         private static async Task<IdentityResult> TryExecuteAsync(

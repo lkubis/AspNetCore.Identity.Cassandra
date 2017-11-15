@@ -1,4 +1,5 @@
-﻿using AspNetCore.Identity.Cassandra.Models;
+﻿using System;
+using AspNetCore.Identity.Cassandra.Models;
 using Cassandra;
 using Cassandra.Data.Linq;
 
@@ -15,6 +16,12 @@ namespace AspNetCore.Identity.Cassandra
 
         public void Initialize<TUser, TRole>(CassandraOptions options)
         {
+            if (options == null)
+                throw new ArgumentNullException(nameof(options));
+
+            if (string.IsNullOrEmpty(options.KeyspaceName))
+                throw new InvalidOperationException("Keyspace is null or empty.");
+
             // Keyspace
             _session.CreateKeyspaceIfNotExists(options.KeyspaceName, replication: options.Replication, durableWrites: options.DurableWrites);
             _session.ChangeKeyspace(options.KeyspaceName);
@@ -37,19 +44,25 @@ namespace AspNetCore.Identity.Cassandra
 
             var rolesTable = new Table<TRole>(_session);
             rolesTable.CreateIfNotExists();
-
+            
             // Materialized views
-            var usersTableName = usersTable.GetTable().Name;
+            CassandraSessionHelper.UsersTableName = usersTable.GetTable().Name;
+            CassandraSessionHelper.RolesTableName = rolesTable.GetTable().Name;
+
             _session.Execute("CREATE MATERIALIZED VIEW IF NOT EXISTS users_by_email AS" +
-                             $" SELECT * FROM {options.KeyspaceName}.{usersTableName}" +
+                             $" SELECT * FROM {options.KeyspaceName}.{CassandraSessionHelper.UsersTableName}" +
                              " WHERE NormalizedEmail IS NOT NULL" +
                              " PRIMARY KEY (NormalizedEmail, Id)");
 
             _session.Execute("CREATE MATERIALIZED VIEW IF NOT EXISTS users_by_username AS" +
-                             $" SELECT * FROM {options.KeyspaceName}.{usersTableName}" +
+                             $" SELECT * FROM {options.KeyspaceName}.{CassandraSessionHelper.UsersTableName}" +
                              " WHERE NormalizedUserName IS NOT NULL" +
                              " PRIMARY KEY (NormalizedUserName, Id)");
 
+            _session.Execute("CREATE MATERIALIZED VIEW IF NOT EXISTS roles_by_name AS" +
+                             $" SELECT * FROM {options.KeyspaceName}.{CassandraSessionHelper.RolesTableName}" +
+                             " WHERE NormalizedName IS NOT NULL" +
+                             " PRIMARY KEY (NormalizedName, Id)");
         }
     }
 }

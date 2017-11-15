@@ -1,27 +1,34 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using System.Threading.Tasks;
+using AspNetCore.Identity.Cassandra.Extensions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using IdentitySample.Web.Services;
 using IdentitySample.Web.Extensions;
 using IdentitySample.Web.Data;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace IdentitySample.Web.Pages.Account.Manage
 {
     public partial class IndexModel : PageModel
     {
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly RoleManager<ApplicationRole> _roleManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly IEmailSender _emailSender;
 
         public IndexModel(
             UserManager<ApplicationUser> userManager,
+            RoleManager<ApplicationRole> roleManager,
             SignInManager<ApplicationUser> signInManager,
             IEmailSender emailSender)
         {
             _userManager = userManager;
+            _roleManager = roleManager;
             _signInManager = signInManager;
             _emailSender = emailSender;
         }
@@ -32,6 +39,12 @@ namespace IdentitySample.Web.Pages.Account.Manage
 
         [TempData]
         public string StatusMessage { get; set; }
+
+        public List<SelectListItem> Roles { get; set; }
+
+        [BindProperty]
+        [Display(Name = "Roles")]
+        public List<SelectListItem> SelectedRoles { get; set; }
 
         [BindProperty]
         public InputModel Input { get; set; }
@@ -56,11 +69,20 @@ namespace IdentitySample.Web.Pages.Account.Manage
             }
 
             Username = user.UserName;
+            var userRoles = await _userManager.GetRolesAsync(user);
+            Roles = (await _roleManager.Roles.AsCqlQuery().ExecuteAsync())
+                .Select(x => new SelectListItem()
+                {
+                    Text = x.Name,
+                    Value = x.NormalizedName,
+                    Selected = userRoles.Contains(x.NormalizedName)
+                }).ToList();
 
             Input = new InputModel
             {
                 Email = user.Email,
-                PhoneNumber = user.Phone?.Number
+                PhoneNumber = user.Phone?.Number,
+
             };
 
             IsEmailConfirmed = await _userManager.IsEmailConfirmedAsync(user);
@@ -98,6 +120,17 @@ namespace IdentitySample.Web.Pages.Account.Manage
                     throw new ApplicationException($"Unexpected error occurred setting phone number for user with ID '{user.Id}'.");
                 }
             }
+
+            var existingRoles = await _userManager.GetRolesAsync(user);
+            var selectedRoles = SelectedRoles.Where(x => x.Selected).Select(x => x.Value).ToList();
+            var rolesToAdd = selectedRoles.Except(existingRoles).ToList();
+            var rolesToRemove = existingRoles.Except(selectedRoles).ToList();
+
+            if(rolesToAdd.Any())
+                await _userManager.AddToRolesAsync(user, rolesToAdd);
+
+            if (rolesToRemove.Any())
+                await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
 
             StatusMessage = "Your profile has been updated";
             return RedirectToPage();

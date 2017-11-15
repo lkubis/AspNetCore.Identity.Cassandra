@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using AspNetCore.Identity.Cassandra.Extensions;
 using AspNetCore.Identity.Cassandra.Models;
 using Cassandra;
+using Cassandra.Data.Linq;
 using Cassandra.Mapping;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
@@ -13,13 +15,14 @@ using Microsoft.Extensions.Options;
 namespace AspNetCore.Identity.Cassandra
 {
     public class CassandraRoleStore<TRole, TSession> : 
-        IRoleStore<TRole>
+        IQueryableRoleStore<TRole>
         where TRole : CassandraIdentityRole
         where TSession : class, ISession
     {
         #region | Fields
 
         private readonly IMapper _mapper;
+        private readonly Table<TRole> _table;
         private bool _isDisposed;
         private readonly IOptionsSnapshot<CassandraOptions> _snapshot;
         private readonly ILogger _logger;
@@ -31,6 +34,7 @@ namespace AspNetCore.Identity.Cassandra
         public IdentityErrorDescriber ErrorDescriber { get; }
         public CassandraErrorDescriber CassandraErrorDescriber { get; }
         public TSession Session { get; }
+        public IQueryable<TRole> Roles => _table;
 
         #endregion
 
@@ -48,11 +52,14 @@ namespace AspNetCore.Identity.Cassandra
             Session = session ?? throw new ArgumentNullException(nameof(session));
 
             _mapper = new Mapper(session);
+            _table = new Table<TRole>(session);
             _snapshot = snapshot;
             _logger = loggerFactory.CreateLogger(typeof(CassandraRoleStore<,>).GetTypeInfo().Name);
         }
 
         #endregion
+
+        #region | Public Methods
 
         public Task<IdentityResult> CreateAsync(TRole role, CancellationToken cancellationToken)
         {
@@ -69,11 +76,11 @@ namespace AspNetCore.Identity.Cassandra
 
             if (role == null)
                 throw new ArgumentNullException(nameof(role));
-
+            
             return _mapper.TryUpdateAsync(role, _snapshot.AsCqlQueryOptions(), CassandraErrorDescriber, _logger);
         }
 
-        public Task<IdentityResult> DeleteAsync(TRole role, CancellationToken cancellationToken)
+        public async Task<IdentityResult> DeleteAsync(TRole role, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
@@ -81,7 +88,21 @@ namespace AspNetCore.Identity.Cassandra
             if (role == null)
                 throw new ArgumentNullException(nameof(role));
 
-            return _mapper.TryDeleteAsync(role, _snapshot.AsCqlQueryOptions(), CassandraErrorDescriber, _logger);
+            var options = _snapshot.Value;
+            var affectedUsers = (await _mapper.FetchAsync<Guid>(
+                $"SELECT id FROM {options.KeyspaceName}.{CassandraSessionHelper.UsersTableName} WHERE roles CONTAINS ?",
+                role.NormalizedName)).ToList();
+
+            return await _mapper.TryExecuteBatchAsync(CassandraErrorDescriber, _logger,
+                batch =>
+                {
+                    if (!affectedUsers.Any())
+                        return;
+                    batch.ExecuteWithOptions(
+                        $"UPDATE {options.KeyspaceName}.{CassandraSessionHelper.UsersTableName} SET roles = roles - ['{role.NormalizedName}'] WHERE Id IN ?",
+                        options.Query, affectedUsers);
+                },
+                batch => batch.Delete(role, _snapshot.AsCqlQueryOptions()));
         }
 
         public Task<string> GetRoleIdAsync(TRole role, CancellationToken cancellationToken)
@@ -146,7 +167,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            return _mapper.SingleOrDefaultAsync<TRole>("WHERE Id = ?", roleId);
+            return _mapper.SingleOrDefaultAsync<TRole>("WHERE Id = ?", Guid.Parse(roleId));
         }
 
         public Task<TRole> FindByNameAsync(string normalizedRoleName, CancellationToken cancellationToken)
@@ -154,10 +175,10 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-
-            return _mapper.SingleOrDefaultAsync<TRole>("WHERE NormalizedName = ?", normalizedRoleName);
+            return _mapper.SingleOrDefaultAsync<TRole>("FROM roles_by_name WHERE NormalizedName = ?", normalizedRoleName);
         }
 
+        #endregion
 
         #region | IDisposable
 

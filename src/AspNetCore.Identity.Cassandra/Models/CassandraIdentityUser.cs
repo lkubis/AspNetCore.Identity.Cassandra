@@ -11,6 +11,7 @@ namespace AspNetCore.Identity.Cassandra.Models
 
         private readonly List<LoginInfo> _logins;
         private readonly List<SimplifiedClaim> _claims;
+        private readonly List<string> _roles;
 
         #endregion
 
@@ -58,6 +59,17 @@ namespace AspNetCore.Identity.Cassandra.Models
             }
         }
 
+        [SecondaryIndex]
+        public IEnumerable<string> Roles
+        {
+            get => _roles;
+            internal set
+            {
+                if (value != null)
+                    _roles.AddRange(value);
+            }
+        }
+
         [Ignore]
         public bool EmailConfirmed => EmailConfirmationTime.HasValue;
 
@@ -69,6 +81,7 @@ namespace AspNetCore.Identity.Cassandra.Models
         {
             _logins = new List<LoginInfo>();
             _claims = new List<SimplifiedClaim>();
+            _roles = new List<string>();
         }
 
         public CassandraIdentityUser(Guid id)
@@ -127,6 +140,24 @@ namespace AspNetCore.Identity.Cassandra.Models
             _claims.Remove(claim);
         }
 
+        internal void AddRole(string role)
+        {
+            if (string.IsNullOrEmpty(role))
+                throw new ArgumentNullException(nameof(role));
+
+            if (!_roles.Contains(role))
+                _roles.Add(role);
+        }
+
+        internal void RemoveRole(string role)
+        {
+            if (string.IsNullOrEmpty(role))
+                throw new ArgumentNullException(nameof(role));
+
+            if (_roles.Contains(role))
+                _roles.Remove(role);
+        }
+        
         #endregion
     }
 }

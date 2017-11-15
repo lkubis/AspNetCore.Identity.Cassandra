@@ -20,13 +20,16 @@ namespace AspNetCore.Identity.Cassandra
         IUserPasswordStore<TUser>,
         IUserSecurityStampStore<TUser>,
         IUserPhoneNumberStore<TUser>,
-        IUserEmailStore<TUser>
+        IUserEmailStore<TUser>,
+        IUserRoleStore<TUser>,
+        IQueryableUserStore<TUser>
         where TUser : CassandraIdentityUser
         where TSession : class, ISession
     {
         #region | Fields
 
         private readonly IMapper _mapper;
+        private readonly Table<TUser> _table;
         private readonly IOptionsSnapshot<CassandraOptions> _snapshot;
         private readonly ILogger _logger;
         private bool _isDisposed;
@@ -38,6 +41,7 @@ namespace AspNetCore.Identity.Cassandra
         public IdentityErrorDescriber ErrorDescriber { get; }
         public CassandraErrorDescriber CassandraErrorDescriber { get; }
         public TSession Session { get; }
+        public IQueryable<TUser> Users => _table;
 
         #endregion
 
@@ -55,6 +59,7 @@ namespace AspNetCore.Identity.Cassandra
             Session = session ?? throw new ArgumentNullException(nameof(session));
 
             _mapper = new Mapper(session);
+            _table = new Table<TUser>(session);
             _snapshot = snapshot;
             _logger = loggerFactory.CreateLogger(typeof(CassandraUserStore<,>).GetTypeInfo().Name);
         }
@@ -107,7 +112,7 @@ namespace AspNetCore.Identity.Cassandra
             return Task.FromResult<IList<UserLoginInfo>>(user.Logins.Select(x => new UserLoginInfo(x.LoginProvider, x.ProviderKey, x.ProviderDisplayName)).ToList());
         }
 
-        public Task<TUser> FindByLoginAsync(string loginProvider, string providerKey, CancellationToken cancellationToken)
+        public async Task<TUser> FindByLoginAsync(string loginProvider, string providerKey, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
@@ -122,7 +127,7 @@ namespace AspNetCore.Identity.Cassandra
                         where user.Logins.Any(x => x.LoginProvider == loginProvider && x.ProviderKey == providerKey)
                         select user;
 
-            return Task.FromResult(query.FirstOrDefault().Execute());
+            return await query.FirstOrDefault().ExecuteAsync();
         }
 
         #endregion
@@ -440,7 +445,65 @@ namespace AspNetCore.Identity.Cassandra
         }
 
         #endregion
-        
+
+        #region | IUserRoleStore
+
+        public Task AddToRoleAsync(TUser user, string roleName, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            if (user == null)
+                throw new ArgumentNullException(nameof(user));
+            
+            user.AddRole(roleName);
+            return Task.CompletedTask;
+        }
+
+        public Task RemoveFromRoleAsync(TUser user, string roleName, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            if (user == null)
+                throw new ArgumentNullException(nameof(user));
+            
+            user.RemoveRole(roleName);
+            return Task.CompletedTask;
+        }
+
+        public Task<IList<string>> GetRolesAsync(TUser user, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            if (user == null)
+                throw new ArgumentNullException(nameof(user));
+
+            return Task.FromResult<IList<string>>(user.Roles.ToList());
+        }
+
+        public Task<bool> IsInRoleAsync(TUser user, string roleName, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            if (user == null)
+                throw new ArgumentNullException(nameof(user));
+
+            return Task.FromResult(user.Roles.Contains(roleName));
+        }
+
+        public async Task<IList<TUser>> GetUsersInRoleAsync(string roleName, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            return (await _mapper.FetchAsync<TUser>("WHERE roles CONTAINS ?", roleName)).ToList();
+        }
+
+        #endregion
+
         #region | IDisposable
 
         private void ThrowIfDisposed()

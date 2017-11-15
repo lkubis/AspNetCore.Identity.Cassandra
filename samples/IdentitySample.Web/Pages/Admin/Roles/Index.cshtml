@@ -1,0 +1,37 @@
+﻿@page
+@model RolesModel
+@{
+    ViewData["Title"] = "Roles";
+}
+<h4>@ViewData["Title"]</h4>
+@Html.Partial("_StatusMessage", Model.StatusMessage)
+
+<div class="row">
+  <div class="table-responsive">
+    <form method="post">
+      <table class="table">
+        <thead>
+        <tr>
+          <th>Id</th>
+          <th>Name</th>
+          <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var role in Model.Roles)
+        {
+          <tr>
+            <td>@role.Id</td>
+            <td>@role.Name</td>
+            <td><input type="submit" asp-page-handler="Delete" asp-route-id="@role.Id" value="delete" /></td>
+          </tr>
+        }
+        </tbody>
+      </table>
+    </form>
+  </div>
+</div>
+
+@section Scripts {
+  @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

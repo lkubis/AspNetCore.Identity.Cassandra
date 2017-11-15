@@ -1,7 +1,7 @@
 ﻿@page
 @model IndexModel
 @{
-  ViewData["Title"] = "Profile";
+    ViewData["Title"] = "Profile";
 }
 
 <h4>@ViewData["Title"]</h4>
@@ -15,18 +15,37 @@
         <input asp-for="Username" class="form-control" disabled />
       </div>
       <div class="form-group">
+        <label asp-for="SelectedRoles"></label>
+        @{
+          for (int i = 0; i < Model.Roles.Count; i++)
+          {
+            <div class="checkbox">
+              @if(Model.Roles[i].Selected)
+              {
+                <label><input asp-for="SelectedRoles[i].Selected" value="true" checked="checked" type="checkbox">@Model.Roles[i].Text</label>
+              }
+              else
+              {
+                <label><input asp-for="SelectedRoles[i].Selected" type="checkbox">@Model.Roles[i].Text</label>
+              }
+            </div>
+            <input asp-for="SelectedRoles[i].Value" type="hidden" value="@Model.Roles[i].Value" />
+          }
+        }
+      </div>
+      <div class="form-group">
         <label asp-for="Input.Email"></label>
         @if (Model.IsEmailConfirmed)
         {
-          <div class="input-group">
-            <input asp-for="Input.Email" class="form-control" />
-            <span class="input-group-addon" aria-hidden="true"><span class="glyphicon glyphicon-ok text-success"></span></span>
-          </div>
+            <div class="input-group">
+              <input asp-for="Input.Email" class="form-control" />
+              <span class="input-group-addon" aria-hidden="true"><span class="glyphicon glyphicon-ok text-success"></span></span>
+            </div>
         }
         else
         {
-          <input asp-for="Input.Email" class="form-control" />
-          <button asp-page-handler="SendVerificationEmail" class="btn btn-link">Send verification email</button>
+            <input asp-for="Input.Email" class="form-control" />
+            <button asp-page-handler="SendVerificationEmail" class="btn btn-link">Send verification email</button>
         }
         <span asp-validation-for="Input.Email" class="text-danger"></span>
       </div>
