@@ -10,8 +10,8 @@
     <PackageProjectUrl>https://github.com/lkubis/AspNetCore.Identity.Cassandra</PackageProjectUrl>
     <RepositoryUrl>https://github.com/lkubis/AspNetCore.Identity.Cassandra</RepositoryUrl>
     <Copyright>Copyright 2017 (c) Lukas Kubis</Copyright>
-    <Description>Apache Cassandra data store adaptor for ASP.NET Core Identity, which allows you to build ASP.NET Core web applications, including membership, login, and user data. With this library, you can store your user's membership related data on Apache Cassandra.</Description>
-    <Version>1.0.0-alpha2</Version>
+    <Description>Apache Cassandra data store adapter for ASP.NET Core Identity, which allows you to build ASP.NET Core web applications, including membership, login, and user data. With this library, you can store your user's membership related data on Apache Cassandra.</Description>
+    <Version>1.0.0-alpha3</Version>
   </PropertyGroup>
 
   <ItemGroup>
