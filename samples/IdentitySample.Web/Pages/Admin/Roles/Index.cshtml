@@ -12,7 +12,6 @@
       <table class="table">
         <thead>
         <tr>
-          <th>Id</th>
           <th>Name</th>
           <th></th>
         </tr>
@@ -21,9 +20,8 @@
         @foreach (var role in Model.Roles)
         {
           <tr>
-            <td>@role.Id</td>
-            <td>@role.Name</td>
-            <td><input type="submit" asp-page-handler="Delete" asp-route-id="@role.Id" value="delete" /></td>
+            <td><a asp-page="./EditRole" asp-route-id="@role.Id">@role.Name</a></td>
+            <td style="width: 15px;"><input type="submit" asp-page-handler="Delete" asp-route-id="@role.Id" value="delete" /></td>
           </tr>
         }
         </tbody>
