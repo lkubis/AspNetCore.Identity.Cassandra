@@ -23,8 +23,18 @@ namespace AspNetCore.Identity.Cassandra
                 throw new InvalidOperationException("Keyspace is null or empty.");
 
             // Keyspace
-            _session.CreateKeyspaceIfNotExists(options.KeyspaceName, replication: options.Replication, durableWrites: options.DurableWrites);
-            _session.ChangeKeyspace(options.KeyspaceName);
+            try 
+            {
+                // Attempt to switch to keyspace
+                _session.ChangeKeyspace(options.KeyspaceName);
+            }
+            catch (InvalidQueryException)
+            {
+                // If failed with InvalidQueryException then keyspace does not exist
+                // -> create new one
+                _session.CreateKeyspaceIfNotExists(options.KeyspaceName, replication: options.Replication, durableWrites: options.DurableWrites);
+                _session.ChangeKeyspace(options.KeyspaceName);
+            }
 
             // User Defined Types
             _session.Execute($"CREATE TYPE IF NOT EXISTS {options.KeyspaceName}.LockoutInfo (EndDate timestamp, Enabled boolean, AccessFailedCount int);");
