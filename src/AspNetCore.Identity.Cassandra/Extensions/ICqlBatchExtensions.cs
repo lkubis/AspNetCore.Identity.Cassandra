@@ -4,13 +4,9 @@ namespace AspNetCore.Identity.Cassandra.Extensions
 {
     public static class ICqlBatchExtensions
     {
-        public static void ExecuteWithOptions(
-            this ICqlBatch batch,
-            string cql,
-            CassandraQueryOptions queryOptions,
-            params object[] args)
+        public static ICqlBatch WithOptions(this ICqlBatch batch, CassandraQueryOptions queryOptions)
         {
-            batch.WithOptions(o =>
+            return batch.WithOptions(o =>
             {
                 if (queryOptions == null)
                     return;
@@ -28,8 +24,7 @@ namespace AspNetCore.Identity.Cassandra.Extensions
                     else
                         o.DisableTracing();
                 }
-            })
-            .Execute(cql, args);
+            });
         }
     }
 }

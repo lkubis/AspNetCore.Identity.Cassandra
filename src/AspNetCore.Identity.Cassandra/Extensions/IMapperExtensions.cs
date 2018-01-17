@@ -40,9 +40,13 @@ namespace AspNetCore.Identity.Cassandra.Extensions
         public static Task<IdentityResult> TryExecuteBatchAsync(this IMapper mapper,
             CassandraErrorDescriber errorDescriber,
             ILogger logger,
+            CassandraQueryOptions options,
             params Action<ICqlBatch>[] actions)
         {
-            var batch = mapper.CreateBatch();
+            var batch = mapper
+                .CreateBatch()
+                .WithOptions(options);
+
             foreach (var a in actions)
                 a(batch);
 

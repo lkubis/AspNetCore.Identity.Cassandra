@@ -84,16 +84,16 @@ namespace AspNetCore.Identity.Cassandra
                 originalRole.NormalizedName)).ToList();
 
             // Role cannot be changed directly in a list. We have to remove it first, and then add it again
-            return await _mapper.TryExecuteBatchAsync(CassandraErrorDescriber, _logger,
+            return await _mapper.TryExecuteBatchAsync(CassandraErrorDescriber, _logger, options.Query,
                 batch =>
                 {
                     // Remove original role from existing users
                     if (!affectedUsers.Any())
                         return;
 
-                    batch.ExecuteWithOptions(
+                    batch.Execute(
                         $"UPDATE {options.KeyspaceName}.{CassandraSessionHelper.UsersTableName} SET roles = roles - ['{originalRole.NormalizedName}'] WHERE Id IN ?",
-                        options.Query, affectedUsers);
+                        affectedUsers);
                 },
                 batch =>
                 {
@@ -101,11 +101,11 @@ namespace AspNetCore.Identity.Cassandra
                     if (!affectedUsers.Any())
                         return;
 
-                    batch.ExecuteWithOptions(
+                    batch.Execute(
                         $"UPDATE {options.KeyspaceName}.{CassandraSessionHelper.UsersTableName} SET roles = roles + ['{role.NormalizedName}'] WHERE Id IN ?",
-                        options.Query, affectedUsers);
+                        affectedUsers);
                 },
-                batch => batch.Update(role, _snapshot.AsCqlQueryOptions()));
+                batch => batch.Update(role));
         }
 
         public async Task<IdentityResult> DeleteAsync(TRole role, CancellationToken cancellationToken)
@@ -121,16 +121,17 @@ namespace AspNetCore.Identity.Cassandra
                 $"SELECT id FROM {options.KeyspaceName}.{CassandraSessionHelper.UsersTableName} WHERE roles CONTAINS ?",
                 role.NormalizedName)).ToList();
 
-            return await _mapper.TryExecuteBatchAsync(CassandraErrorDescriber, _logger,
+            return await _mapper.TryExecuteBatchAsync(CassandraErrorDescriber, _logger, options.Query,
                 batch =>
                 {
                     if (!affectedUsers.Any())
                         return;
-                    batch.ExecuteWithOptions(
+
+                    batch.Execute(
                         $"UPDATE {options.KeyspaceName}.{CassandraSessionHelper.UsersTableName} SET roles = roles - ['{role.NormalizedName}'] WHERE Id IN ?",
-                        options.Query, affectedUsers);
+                        affectedUsers);
                 },
-                batch => batch.Delete(role, _snapshot.AsCqlQueryOptions()));
+                batch => batch.Delete(role));
         }
 
         public Task<string> GetRoleIdAsync(TRole role, CancellationToken cancellationToken)

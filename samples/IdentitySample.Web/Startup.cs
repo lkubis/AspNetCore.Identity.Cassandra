@@ -29,12 +29,19 @@ namespace IdentitySample.Web
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddOptions();
-            services.Configure<CassandraOptions>(Configuration.GetSection("CassandraOptions"));
+            services.Configure<CassandraOptions>(Configuration.GetSection("Cassandra"));
 
             services.AddCassandraSession<Cassandra.ISession>(() =>
             {
+                var contactPoints = Configuration
+                    .GetSection("Cassandra:ContactPoints")
+                    .GetChildren()
+                    .Select(x => x.Value);
                 var cluster = Cassandra.Cluster.Builder()
-                    .AddContactPoints(Configuration.GetSection("CassandraNodes").GetChildren().Select(x => x.Value))
+                    .AddContactPoints(contactPoints)
+                    .WithCredentials(
+                        Configuration.GetValue<string>("Cassandra:Credentials:UserName"),
+                        Configuration.GetValue<string>("Cassandra:Credentials:Password"))
                     .Build();
                 var session = cluster.Connect();
                 return session;
