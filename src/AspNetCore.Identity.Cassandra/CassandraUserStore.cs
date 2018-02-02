@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using AspNetCore.Identity.Cassandra.Extensions;
@@ -22,17 +23,26 @@ namespace AspNetCore.Identity.Cassandra
         IUserPhoneNumberStore<TUser>,
         IUserEmailStore<TUser>,
         IUserRoleStore<TUser>,
-        IQueryableUserStore<TUser>
+        IQueryableUserStore<TUser>,
+        IUserTwoFactorStore<TUser>,
+        IUserAuthenticatorKeyStore<TUser>,
+        IUserTwoFactorRecoveryCodeStore<TUser>,
+        IUserLockoutStore<TUser>,
+        IUserClaimStore<TUser>
         where TUser : CassandraIdentityUser
         where TSession : class, ISession
     {
         #region | Fields
 
         private readonly IMapper _mapper;
-        private readonly Table<TUser> _table;
+        private readonly Table<TUser> _usersTable;
         private readonly IOptionsSnapshot<CassandraOptions> _snapshot;
         private readonly ILogger _logger;
         private bool _isDisposed;
+
+        private const string InternalLoginProvider = "[CassandraUserStore]";
+        private const string AuthenticatorKeyTokenName = "AuthenticatorKey";
+        private const string RecoveryCodeTokenName = "RecoveryCodes";
 
         #endregion
 
@@ -41,7 +51,7 @@ namespace AspNetCore.Identity.Cassandra
         public IdentityErrorDescriber ErrorDescriber { get; }
         public CassandraErrorDescriber CassandraErrorDescriber { get; }
         public TSession Session { get; }
-        public IQueryable<TUser> Users => _table;
+        public IQueryable<TUser> Users => _usersTable;
 
         #endregion
 
@@ -50,7 +60,7 @@ namespace AspNetCore.Identity.Cassandra
         public CassandraUserStore(
             TSession session,
             IOptionsSnapshot<CassandraOptions> snapshot,
-            ILoggerFactory loggerFactory,
+            ILogger<CassandraUserStore<TUser, TSession>> logger,
             IdentityErrorDescriber errorDescriber = null,
             CassandraErrorDescriber cassandraErrorDescriber = null)
         {
@@ -59,12 +69,16 @@ namespace AspNetCore.Identity.Cassandra
             Session = session ?? throw new ArgumentNullException(nameof(session));
 
             _mapper = new Mapper(session);
-            _table = new Table<TUser>(session);
+            _usersTable = new Table<TUser>(session);
             _snapshot = snapshot;
-            _logger = loggerFactory.CreateLogger(typeof(CassandraUserStore<,>).GetTypeInfo().Name);
+            _logger = logger;
         }
 
         #endregion
+
+        #region | Public Methods
+
+        #region | Stores
 
         #region | IUserLoginStore
 
@@ -455,7 +469,7 @@ namespace AspNetCore.Identity.Cassandra
 
             if (user == null)
                 throw new ArgumentNullException(nameof(user));
-            
+
             user.AddRole(roleName);
             return Task.CompletedTask;
         }
@@ -467,7 +481,7 @@ namespace AspNetCore.Identity.Cassandra
 
             if (user == null)
                 throw new ArgumentNullException(nameof(user));
-            
+
             user.RemoveRole(roleName);
             return Task.CompletedTask;
         }
@@ -504,6 +518,283 @@ namespace AspNetCore.Identity.Cassandra
 
         #endregion
 
+        #region | IUserTwoFactorStore
+
+        public Task SetTwoFactorEnabledAsync(TUser user, bool enabled, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            if (user == null)
+                throw new ArgumentNullException(nameof(user));
+
+            user.TwoFactorEnabled = enabled;
+            return Task.CompletedTask;
+        }
+
+        public Task<bool> GetTwoFactorEnabledAsync(TUser user, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            if (user == null)
+                throw new ArgumentNullException(nameof(user));
+
+            return Task.FromResult(user.TwoFactorEnabled);
+        }
+
+        #endregion
+
+        #region | IUserAuthenticatorKeyStore
+
+        public Task SetAuthenticatorKeyAsync(TUser user, string key, CancellationToken cancellationToken)
+            => SetTokenAsync(user, InternalLoginProvider, AuthenticatorKeyTokenName, key, cancellationToken);
+
+        public Task<string> GetAuthenticatorKeyAsync(TUser user, CancellationToken cancellationToken)
+            => GetTokenAsync(user, InternalLoginProvider, AuthenticatorKeyTokenName, cancellationToken);
+
+        #endregion
+
+        #region | IUserTwoFactorRecoveryCodeStore
+
+        public Task ReplaceCodesAsync(TUser user, IEnumerable<string> recoveryCodes, CancellationToken cancellationToken)
+        {
+            var mergedCodes = string.Join(";", recoveryCodes);
+            return SetTokenAsync(user, InternalLoginProvider, RecoveryCodeTokenName, mergedCodes, cancellationToken);
+        }
+
+        public async Task<bool> RedeemCodeAsync(TUser user, string code, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            if (user == null)
+                throw new ArgumentNullException(nameof(user));
+
+            if (code == null)
+                throw new ArgumentNullException(nameof(code));
+
+            var mergedCodes = await GetTokenAsync(user, InternalLoginProvider, RecoveryCodeTokenName, cancellationToken) ?? "";
+            var splitCodes = mergedCodes.Split(';');
+            if (!splitCodes.Contains(code))
+                return false;
+
+            var updatedCodes = new List<string>(splitCodes.Where(s => s != code));
+            await ReplaceCodesAsync(user, updatedCodes, cancellationToken);
+            return true;
+        }
+
+        public async Task<int> CountCodesAsync(TUser user, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            if (user == null)
+                throw new ArgumentNullException(nameof(user));
+
+            var mergedCodes = await GetTokenAsync(user, InternalLoginProvider, RecoveryCodeTokenName, cancellationToken) ?? "";
+            return mergedCodes.Length > 0
+                ? mergedCodes.Split(';').Length
+                : 0;
+        }
+
+        #endregion
+
+        #region | IUserLockoutStore
+
+        public Task<DateTimeOffset?> GetLockoutEndDateAsync(TUser user, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            if (user == null)
+                throw new ArgumentNullException(nameof(user));
+
+            return Task.FromResult(user.Lockout?.EndDate);
+        }
+
+        public Task SetLockoutEndDateAsync(TUser user, DateTimeOffset? lockoutEnd, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            if (user == null)
+                throw new ArgumentNullException(nameof(user));
+
+            if (user.Lockout == null)
+                user.Lockout = new LockoutInfo();
+
+            user.Lockout.EndDate = lockoutEnd;
+            return Task.CompletedTask;
+        }
+
+        public Task<int> IncrementAccessFailedCountAsync(TUser user, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            if (user == null)
+                throw new ArgumentNullException(nameof(user));
+
+            if (user.Lockout == null)
+                user.Lockout = new LockoutInfo();
+
+            var newAccessFailedCount = ++user.Lockout.AccessFailedCount;
+            return Task.FromResult(newAccessFailedCount);
+        }
+
+        public Task ResetAccessFailedCountAsync(TUser user, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            if (user == null)
+                throw new ArgumentNullException(nameof(user));
+
+            if (user.Lockout != null)
+                user.Lockout.AccessFailedCount = 0;
+
+            return Task.CompletedTask;
+        }
+
+        public Task<int> GetAccessFailedCountAsync(TUser user, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            if (user == null)
+                throw new ArgumentNullException(nameof(user));
+
+            return Task.FromResult(user.Lockout?.AccessFailedCount ?? 0);
+        }
+
+        public Task<bool> GetLockoutEnabledAsync(TUser user, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            if (user == null)
+                throw new ArgumentNullException(nameof(user));
+
+            return Task.FromResult(user.Lockout != null && user.Lockout.Enabled);
+        }
+
+        public Task SetLockoutEnabledAsync(TUser user, bool enabled, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            if (user == null)
+                throw new ArgumentNullException(nameof(user));
+
+            if (user.Lockout == null)
+                user.Lockout = new LockoutInfo();
+
+            user.Lockout.Enabled = enabled;
+            return Task.CompletedTask;
+        }
+
+        #endregion
+
+        #region | IUserClaimStore
+
+        public async Task<IList<Claim>> GetClaimsAsync(TUser user, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            if (user == null)
+                throw new ArgumentNullException(nameof(user));
+
+            var options = _snapshot.Value;
+            var ps = await Session.PrepareAsync($"SELECT * FROM {options.KeyspaceName}.userclaims WHERE userid = ?");
+            var statement = ps.Bind(user.Id);
+            
+            var rs = await Session.ExecuteAsync(statement);
+            return rs
+                .Select(x => new Claim(x.GetValue<string>("type"), x.GetValue<string>("value")))
+                .ToList();
+        }
+
+        public async Task AddClaimsAsync(TUser user, IEnumerable<Claim> claims, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            if (user == null)
+                throw new ArgumentNullException(nameof(user));
+
+            var options = _snapshot.Value;
+            var batch = _mapper
+                .CreateBatch()
+                .WithOptions(options.Query);
+
+            foreach (var claim in claims)
+            {
+                batch.Execute($"INSERT INTO {options.KeyspaceName}.userclaims(userid, type, value) VALUES(?, ?, ?)",
+                    user.Id, claim.Type, claim.Value);
+            }
+
+            await _mapper.ExecuteAsync(batch);
+        }
+
+        public async Task ReplaceClaimAsync(TUser user, Claim claim, Claim newClaim, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            if (user == null)
+                throw new ArgumentNullException(nameof(user));
+
+            var options = _snapshot.Value;
+            var batch = _mapper
+                .CreateBatch()
+                .WithOptions(options.Query);
+
+            batch.Execute($"DELETE FROM {options.KeyspaceName}.userclaims WHERE userid = ? AND type = ? AND value = ?",
+                user.Id, claim.Type, claim.Value);
+
+            batch.Execute($"INSERT INTO {options.KeyspaceName}.userclaims(userid, type, value) VALUES(?, ?, ?)",
+                user.Id, newClaim.Type, newClaim.Value);
+
+            await _mapper.ExecuteAsync(batch);
+        }
+
+        public async Task RemoveClaimsAsync(TUser user, IEnumerable<Claim> claims, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            if (user == null)
+                throw new ArgumentNullException(nameof(user));
+
+            var options = _snapshot.Value;
+            var batch = _mapper
+                .CreateBatch()
+                .WithOptions(options.Query);
+
+            foreach (var claim in claims)
+            {
+                batch.Execute($"DELETE FROM {options.KeyspaceName}.userclaims WHERE userid = ? AND type = ? AND value = ?",
+                    user.Id, claim.Type, claim.Value);
+            }
+
+            await _mapper.ExecuteAsync(batch);
+        }
+
+        public async Task<IList<TUser>> GetUsersForClaimAsync(Claim claim, CancellationToken cancellationToken)
+        {
+            var affectedUsers = (await _mapper.FetchAsync<Guid>(
+                $"SELECT userid FROM userclaims_by_type_and_value WHERE type = ? AND value = ?",
+                claim.Type, claim.Value)).ToList();
+
+            return (await _mapper.FetchAsync<TUser>("WHERE id IN ?", affectedUsers)).ToList();
+        }
+
+        #endregion
+
+        #endregion
+
         #region | IDisposable
 
         private void ThrowIfDisposed()
@@ -515,6 +806,37 @@ namespace AspNetCore.Identity.Cassandra
         public void Dispose()
         {
             _isDisposed = true;
+        }
+
+        #endregion
+
+        #endregion
+
+        #region | Private Methods
+
+        private Task SetTokenAsync(TUser user, string loginProvider, string name, string value, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            if (user == null)
+                throw new ArgumentNullException(nameof(user));
+
+            user.RemoveToken(loginProvider, name);
+            user.AddToken(new TokenInfo(loginProvider, name, value));
+            return Task.CompletedTask;
+        }
+
+        private Task<string> GetTokenAsync(TUser user, string loginProvider, string name, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            if (user == null)
+                throw new ArgumentNullException(nameof(user));
+
+            var token = user.Tokens.SingleOrDefault(x => x.LoginProvider == loginProvider && x.Name == name);
+            return Task.FromResult(token?.Value);
         }
 
         #endregion

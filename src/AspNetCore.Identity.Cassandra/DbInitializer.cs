@@ -40,13 +40,13 @@ namespace AspNetCore.Identity.Cassandra
             _session.Execute($"CREATE TYPE IF NOT EXISTS {options.KeyspaceName}.LockoutInfo (EndDate timestamp, Enabled boolean, AccessFailedCount int);");
             _session.Execute($"CREATE TYPE IF NOT EXISTS {options.KeyspaceName}.PhoneInfo (Number text, ConfirmationTime timestamp);");
             _session.Execute($"CREATE TYPE IF NOT EXISTS {options.KeyspaceName}.LoginInfo (LoginProvider text, ProviderKey text, ProviderDisplayName text);");
-            _session.Execute($"CREATE TYPE IF NOT EXISTS {options.KeyspaceName}.SimplifiedClaim (Type text, Value text);");
+            _session.Execute($"CREATE TYPE IF NOT EXISTS {options.KeyspaceName}.TokenInfo (LoginProvider text, Name text, Value text);");
 
             _session.UserDefinedTypes.Define(
                 UdtMap.For<LockoutInfo>(),
                 UdtMap.For<PhoneInfo>(),
                 UdtMap.For<LoginInfo>(),
-                UdtMap.For<SimplifiedClaim>());
+                UdtMap.For<TokenInfo>());
 
             // Tables
             var usersTable = new Table<TUser>(_session);
@@ -54,7 +54,13 @@ namespace AspNetCore.Identity.Cassandra
 
             var rolesTable = new Table<TRole>(_session);
             rolesTable.CreateIfNotExists();
-            
+
+            _session.Execute($"CREATE TABLE IF NOT EXISTS {options.KeyspaceName}.userclaims (" +
+                " UserId uuid, " +
+                " Type text, " +
+                " Value text, " +
+                " PRIMARY KEY (UserId, Type, Value));"); 
+
             // Materialized views
             CassandraSessionHelper.UsersTableName = usersTable.GetTable().Name;
             CassandraSessionHelper.RolesTableName = rolesTable.GetTable().Name;
@@ -73,6 +79,11 @@ namespace AspNetCore.Identity.Cassandra
                              $" SELECT * FROM {options.KeyspaceName}.{CassandraSessionHelper.RolesTableName}" +
                              " WHERE NormalizedName IS NOT NULL" +
                              " PRIMARY KEY (NormalizedName, Id)");
+
+            _session.Execute("CREATE MATERIALIZED VIEW IF NOT EXISTS userclaims_by_type_and_value AS" +
+                             $" SELECT * FROM {options.KeyspaceName}.userclaims" +
+                             " WHERE Type IS NOT NULL AND Value IS NOT NULL" +
+                             " PRIMARY KEY ((Type, Value), UserId)");
         }
     }
 }

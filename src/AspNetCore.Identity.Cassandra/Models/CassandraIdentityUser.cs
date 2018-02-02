@@ -10,7 +10,7 @@ namespace AspNetCore.Identity.Cassandra.Models
         #region | Fields
 
         private readonly List<LoginInfo> _logins;
-        private readonly List<SimplifiedClaim> _claims;
+        private readonly List<TokenInfo> _tokens;
         private readonly List<string> _roles;
 
         #endregion
@@ -28,7 +28,7 @@ namespace AspNetCore.Identity.Cassandra.Models
         public DateTimeOffset? EmailConfirmationTime { get; set; }
 
         public string PasswordHash { get; internal set; }
-        public bool UsesTwoFactorAuthentication { get; internal set; }
+        public bool TwoFactorEnabled { get; internal set; }
         public string SecurityStamp { get; internal set; }
 
         [Frozen]
@@ -49,13 +49,13 @@ namespace AspNetCore.Identity.Cassandra.Models
         }
 
         [Frozen]
-        public IEnumerable<SimplifiedClaim> Claims
+        public IEnumerable<TokenInfo> Tokens
         {
-            get => _claims;
+            get => _tokens;
             internal set
             {
                 if (value != null)
-                    _claims.AddRange(value);
+                    _tokens.AddRange(value);
             }
         }
 
@@ -80,7 +80,7 @@ namespace AspNetCore.Identity.Cassandra.Models
         public CassandraIdentityUser()
         {
             _logins = new List<LoginInfo>();
-            _claims = new List<SimplifiedClaim>();
+            _tokens = new List<TokenInfo>();
             _roles = new List<string>();
         }
 
@@ -109,7 +109,7 @@ namespace AspNetCore.Identity.Cassandra.Models
                 throw new ArgumentNullException(nameof(login));
 
             if (_logins.Any(l => l.LoginProvider == login.LoginProvider && l.ProviderKey == login.ProviderKey))
-                throw new InvalidOperationException("There is a login with the same provider already exists.");
+                throw new InvalidOperationException($"Login with LoginProvider: '{login.LoginProvider}' and ProviderKey: {login.ProviderKey} already exists.");
 
             _logins.Add(login);
         }
@@ -127,17 +127,28 @@ namespace AspNetCore.Identity.Cassandra.Models
             _logins.Remove(loginToRemove);
         }
 
-        internal void AddClaim(SimplifiedClaim claim)
+        internal void AddToken(TokenInfo token)
         {
-            if (claim == null)
-                throw new ArgumentNullException(nameof(claim));
+            if(token == null)
+                throw new ArgumentNullException(nameof(token));
 
-            _claims.Add(claim);
+            if(_tokens.Any(x => x.LoginProvider == token.LoginProvider && x.Name == token.Name))
+                throw new InvalidOperationException($"Token with LoginProvider: '{token.LoginProvider}' and Name: {token.Name} already exists.");
+
+            _tokens.Add(token);
         }
 
-        internal void RemoveClaim(SimplifiedClaim claim)
+        internal void RemoveToken(string loginProvider, string name)
         {
-            _claims.Remove(claim);
+            var tokenToRemove = _tokens.FirstOrDefault(l =>
+                l.LoginProvider == loginProvider &&
+                l.Name == name
+            );
+
+            if (tokenToRemove == null)
+                return;
+
+            _tokens.Remove(tokenToRemove);
         }
 
         internal void AddRole(string role)

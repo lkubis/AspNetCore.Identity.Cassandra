@@ -30,7 +30,7 @@ namespace IdentitySample.Web.Pages.Account
         }
 
 
-        public async Task<IActionResult> OnPostAsync()
+        public async Task<IActionResult> OnPostAsync(string returnUrl = null)
         {
             if (!ModelState.IsValid)
                 return Page();
@@ -39,6 +39,10 @@ namespace IdentitySample.Web.Pages.Account
             if (result.Succeeded)
             {
                 return RedirectToPage("/Index");
+            }
+            if (result.RequiresTwoFactor)
+            {
+                return RedirectToPage("./LoginWith2fa", new { ReturnUrl = returnUrl, RememberMe = RememberMe });
             }
             else
             {
