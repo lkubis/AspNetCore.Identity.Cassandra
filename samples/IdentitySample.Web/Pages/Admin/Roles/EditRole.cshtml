@@ -1,11 +1,11 @@
 ﻿@page "{id}"
 @model EditRoleModel
 @{
-    ViewData["Title"] = "Edit Role";
+  ViewData["Title"] = "Edit Role";
 }
 
 <h4>@ViewData["Title"]</h4>
-@Html.Partial("_StatusMessage", Model.StatusMessage)
+<partial name="_StatusMessage" model="@Model.StatusMessage" />
 <div class="row">
   <div class="col-md-6">
     <form method="post">
@@ -22,5 +22,5 @@
 </div>
 
 @section Scripts {
-  @await Html.PartialAsync("_ValidationScriptsPartial")
+  <partial name="_ValidationScriptsPartial" />
 }

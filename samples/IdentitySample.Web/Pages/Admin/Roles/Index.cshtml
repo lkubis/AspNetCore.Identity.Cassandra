@@ -1,29 +1,28 @@
 ﻿@page
 @model RolesModel
 @{
-    ViewData["Title"] = "Roles";
+  ViewData["Title"] = "Roles";
 }
 <h4>@ViewData["Title"]</h4>
-@Html.Partial("_StatusMessage", Model.StatusMessage)
-
+<partial name="_StatusMessage" model="@Model.StatusMessage" />
 <div class="row">
   <div class="table-responsive">
     <form method="post">
       <table class="table">
         <thead>
-        <tr>
-          <th>Name</th>
-          <th></th>
-        </tr>
+          <tr>
+            <th>Name</th>
+            <th></th>
+          </tr>
         </thead>
         <tbody>
-        @foreach (var role in Model.Roles)
-        {
-          <tr>
-            <td><a asp-page="./EditRole" asp-route-id="@role.Id">@role.Name</a></td>
-            <td style="width: 15px;"><input type="submit" asp-page-handler="Delete" asp-route-id="@role.Id" value="delete" /></td>
-          </tr>
-        }
+          @foreach (var role in Model.Roles)
+          {
+            <tr>
+              <td><a asp-page="./EditRole" asp-route-id="@role.Id">@role.Name</a></td>
+              <td style="width: 15px;"><input type="submit" asp-page-handler="Delete" asp-route-id="@role.Id" value="delete" /></td>
+            </tr>
+          }
         </tbody>
       </table>
     </form>
@@ -31,5 +30,5 @@
 </div>
 
 @section Scripts {
-  @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+  <partial name="_ValidationScriptsPartial" />
 }

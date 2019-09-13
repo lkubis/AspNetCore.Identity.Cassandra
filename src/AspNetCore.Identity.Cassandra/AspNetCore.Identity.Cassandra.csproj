@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -6,18 +6,19 @@
     <Authors>Lukas Kubis</Authors>
     <Company>Lukas Kubis</Company>
     <PackageTags>aspnetcore identity cassandra cassandra-database datastax datastax-driver</PackageTags>
-    <PackageLicenseUrl>https://github.com/lkubis/AspNetCore.Identity.Cassandra/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageLicenseUrl></PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/lkubis/AspNetCore.Identity.Cassandra</PackageProjectUrl>
     <RepositoryUrl>https://github.com/lkubis/AspNetCore.Identity.Cassandra</RepositoryUrl>
     <Copyright>Copyright 2017 (c) Lukas Kubis</Copyright>
     <Description>Apache Cassandra data store adapter for ASP.NET Core Identity, which allows you to build ASP.NET Core web applications, including membership, login, and user data. With this library, you can store your user's membership related data on Apache Cassandra.</Description>
     <Version>2.0.1</Version>
     <FileVersion>2.0.18033.1</FileVersion>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CassandraCSharpDriver" Version="3.6.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Identity" Version="2.1.3" />
+    <PackageReference Include="CassandraCSharpDriver" Version="3.11.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity" Version="2.2.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -33,6 +34,13 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
   </ItemGroup>
 
 </Project>

@@ -6,7 +6,7 @@
 }
 
 @section Scripts {
-  @await Html.PartialAsync("_ValidationScriptsPartial")
+  <partial name="_ValidationScriptsPartial" />
   <script type="text/javascript" src="~/lib/qrcode/dist/js/qrcode.js"></script>
   <script type="text/javascript">
     new QRCode(document.getElementById("qrCode"),
@@ -18,7 +18,7 @@
   </script>
 }
 <h4>@ViewData["Title"]</h4>
-@Html.Partial("_StatusMessage", Model.StatusMessage)
+<partial name="_StatusMessage" model="@Model.StatusMessage" />
 <div>
   <p>To use an authenticator app go through the following steps:</p>
   <ol class="list">
