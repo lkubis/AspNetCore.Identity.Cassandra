@@ -6,6 +6,8 @@ namespace AspNetCore.Identity.Cassandra
     public class CassandraOptions
     {
         public List<string> ContactPoints { get; set; }
+        public int Port { get; set; } = 9042;
+        public int RetryCount { get; set; } = 3;
         public CassandraCredentials Credentials { get; set; }
         public string KeyspaceName { get; set; }
         public Dictionary<string, string> Replication { get; set; } = null;

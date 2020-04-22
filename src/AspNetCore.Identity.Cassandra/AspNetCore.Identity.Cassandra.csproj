@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>netstandard2.1</TargetFramework>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>Lukas Kubis</Authors>
     <Company>Lukas Kubis</Company>
@@ -11,14 +11,17 @@
     <RepositoryUrl>https://github.com/lkubis/AspNetCore.Identity.Cassandra</RepositoryUrl>
     <Copyright>Copyright 2017 (c) Lukas Kubis</Copyright>
     <Description>Apache Cassandra data store adapter for ASP.NET Core Identity, which allows you to build ASP.NET Core web applications, including membership, login, and user data. With this library, you can store your user's membership related data on Apache Cassandra.</Description>
-    <Version>2.2.0</Version>
-    <FileVersion>2.2.0.0</FileVersion>
+    <Version>2.3.0</Version>
+    <FileVersion>2.3.0.0</FileVersion>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <AssemblyVersion>2.3.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CassandraCSharpDriver" Version="3.11.0" />
+    <PackageReference Include="CassandraCSharpDriver" Version="3.14.0" />
     <PackageReference Include="Microsoft.AspNetCore.Identity" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="3.1.3" />
+    <PackageReference Include="Polly" Version="7.2.0" />
   </ItemGroup>
 
   <ItemGroup>

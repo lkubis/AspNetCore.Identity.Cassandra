@@ -1,8 +1,8 @@
-﻿using AspNetCore.Identity.Cassandra.Extensions;
-using IdentitySample.Web.Data;
-using Microsoft.AspNetCore;
-using Microsoft.AspNetCore.Hosting;
+﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using System;
+using System.IO;
 
 namespace IdentitySample.Web
 {
@@ -15,12 +15,27 @@ namespace IdentitySample.Web
 
         public static IWebHost BuildWebHost(string[] args)
         {
-            var config = new ConfigurationBuilder().AddCommandLine(args).Build();
-            return WebHost.CreateDefaultBuilder(args)
+            return new WebHostBuilder()
+                .UseKestrel()
+                .UseContentRoot(Directory.GetCurrentDirectory())
+                .ConfigureAppConfiguration((hostingContext, config) =>
+                {
+                    var env = hostingContext.HostingEnvironment;
+
+                    config
+                     .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
+                     .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: false)
+                     .AddJsonFile($"appsettings.{Environment.MachineName}.json", optional: true, reloadOnChange: false);
+
+                    if (args != null)
+                        config.AddCommandLine(args);
+                })
+                .ConfigureLogging((hostingContext, logging) =>
+                {
+                    logging.AddConfiguration(hostingContext.Configuration);
+                })
                 .UseStartup<Startup>()
-                .UseConfiguration(config)
-                .Build()
-                .InitializeIdentityDb<ApplicationUser, ApplicationRole>();
+                .Build();
         }
     }
 }

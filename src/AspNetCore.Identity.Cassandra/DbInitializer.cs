@@ -16,7 +16,7 @@ namespace AspNetCore.Identity.Cassandra
 
         public void Initialize<TUser, TRole>(CassandraOptions options)
         {
-            if (options == null)
+            if (options is null)
                 throw new ArgumentNullException(nameof(options));
 
             if (string.IsNullOrEmpty(options.KeyspaceName))
