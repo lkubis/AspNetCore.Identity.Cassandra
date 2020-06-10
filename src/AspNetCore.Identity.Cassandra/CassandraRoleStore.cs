@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using AspNetCore.Identity.Cassandra.Extensions;
@@ -15,7 +17,8 @@ using Microsoft.Extensions.Options;
 namespace AspNetCore.Identity.Cassandra
 {
     public class CassandraRoleStore<TRole, TSession> : 
-        IQueryableRoleStore<TRole>
+        IQueryableRoleStore<TRole>,
+        IRoleClaimStore<TRole>
         where TRole : CassandraIdentityRole
         where TSession : class, ISession
     {
@@ -207,6 +210,62 @@ namespace AspNetCore.Identity.Cassandra
             return _mapper.SingleOrDefaultAsync<TRole>("FROM roles_by_name WHERE NormalizedName = ?", normalizedRoleName);
         }
 
+        public async Task<IList<Claim>> GetClaimsAsync(TRole role, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            if (role == null)
+                throw new ArgumentNullException(nameof(role));
+
+            var options = _snapshot.Value;
+            var ps = await Session.PrepareAsync($"SELECT * FROM {options.KeyspaceName}.roleclaims WHERE roleid = ?");
+            var statement = ps.Bind(role.Id);
+
+            var rs = await Session.ExecuteAsync(statement);
+            return rs
+                .Select(x => new Claim(x.GetValue<string>("type"), x.GetValue<string>("value")))
+                .ToList();
+        }
+
+        public async Task AddClaimAsync(TRole role, Claim claim, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            if (role == null)
+                throw new ArgumentNullException(nameof(role));
+
+            var options = _snapshot.Value;
+            var batch = _mapper
+                .CreateBatch()
+                .WithOptions(options.Query);
+
+            batch.Execute($"INSERT INTO {options.KeyspaceName}.roleclaims(roleid, type, value) VALUES(?, ?, ?)",
+                role.Id, claim.Type, claim.Value);
+            
+            await _mapper.ExecuteAsync(batch);
+        }
+
+        public async Task RemoveClaimAsync(TRole role, Claim claim, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            if (role == null)
+                throw new ArgumentNullException(nameof(role));
+
+            var options = _snapshot.Value;
+            var batch = _mapper
+                .CreateBatch()
+                .WithOptions(options.Query);
+
+            batch.Execute($"DELETE FROM {options.KeyspaceName}.roleclaims WHERE roleid = ? AND type = ? AND value = ?",
+                role.Id, claim.Type, claim.Value);           
+
+            await _mapper.ExecuteAsync(batch);
+        }
+
         #endregion
 
         #region | IDisposable
@@ -222,6 +281,6 @@ namespace AspNetCore.Identity.Cassandra
             _isDisposed = true;
         }
 
-        #endregion
-    }
+		#endregion
+	}
 }
