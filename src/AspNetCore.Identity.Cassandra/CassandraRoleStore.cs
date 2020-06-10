@@ -237,14 +237,10 @@ namespace AspNetCore.Identity.Cassandra
                 throw new ArgumentNullException(nameof(role));
 
             var options = _snapshot.Value;
-            var batch = _mapper
-                .CreateBatch()
-                .WithOptions(options.Query);
+            var ps = await Session.PrepareAsync($"INSERT INTO {options.KeyspaceName}.roleclaims(roleid, type, value) VALUES(?, ?, ?)");
+            var statement = ps.Bind(role.Id, claim.Type, claim.Value);
 
-            batch.Execute($"INSERT INTO {options.KeyspaceName}.roleclaims(roleid, type, value) VALUES(?, ?, ?)",
-                role.Id, claim.Type, claim.Value);
-            
-            await _mapper.ExecuteAsync(batch);
+            await Session.ExecuteAsync(statement);
         }
 
         public async Task RemoveClaimAsync(TRole role, Claim claim, CancellationToken cancellationToken = default)
@@ -256,14 +252,10 @@ namespace AspNetCore.Identity.Cassandra
                 throw new ArgumentNullException(nameof(role));
 
             var options = _snapshot.Value;
-            var batch = _mapper
-                .CreateBatch()
-                .WithOptions(options.Query);
+            var ps = await Session.PrepareAsync($"DELETE FROM {options.KeyspaceName}.roleclaims WHERE roleid = ? AND type = ? AND value = ?");
+            var statement = ps.Bind(role.Id, claim.Type, claim.Value);
 
-            batch.Execute($"DELETE FROM {options.KeyspaceName}.roleclaims WHERE roleid = ? AND type = ? AND value = ?",
-                role.Id, claim.Type, claim.Value);           
-
-            await _mapper.ExecuteAsync(batch);
+            await Session.ExecuteAsync(statement);
         }
 
         #endregion
