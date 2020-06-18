@@ -59,7 +59,13 @@ namespace AspNetCore.Identity.Cassandra
                 " UserId uuid, " +
                 " Type text, " +
                 " Value text, " +
-                " PRIMARY KEY (UserId, Type, Value));"); 
+                " PRIMARY KEY (UserId, Type, Value));");
+
+            _session.Execute($"CREATE TABLE IF NOT EXISTS {options.KeyspaceName}.roleclaims (" +
+                " RoleId uuid, " +
+                " Type text, " +
+                " Value text, " +
+                " PRIMARY KEY (RoleId, Type, Value));");
 
             // Materialized views
             CassandraSessionHelper.UsersTableName = usersTable.GetTable().Name;
