@@ -803,9 +803,18 @@ namespace AspNetCore.Identity.Cassandra
                 throw new ObjectDisposedException(GetType().Name);
         }
 
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_isDisposed)
+                return;
+
+            _isDisposed = true;
+        }
+
         public void Dispose()
         {
-            _isDisposed = true;
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         #endregion

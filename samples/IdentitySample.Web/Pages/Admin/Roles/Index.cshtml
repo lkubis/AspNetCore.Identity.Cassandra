@@ -1,5 +1,6 @@
 ﻿@page
 @model RolesModel
+@inject RoleManager<IdentitySample.Web.Data.ApplicationRole> RoleManager
 @{
   ViewData["Title"] = "Roles";
 }
@@ -12,6 +13,7 @@
         <thead>
           <tr>
             <th>Name</th>
+            <th>Claims</th>
             <th></th>
           </tr>
         </thead>
@@ -20,6 +22,7 @@
           {
             <tr>
               <td><a asp-page="./EditRole" asp-route-id="@role.Id">@role.Name</a></td>
+              <td>@string.Join(", ", (await RoleManager.GetClaimsAsync(role)).Select(x => x.Value))</td>
               <td style="width: 15px;"><input type="submit" asp-page-handler="Delete" asp-route-id="@role.Id" value="delete" /></td>
             </tr>
           }
