@@ -43,6 +43,12 @@ namespace IdentitySample.Web
                 .AddCookie("myCookie", options =>
                 {
                     options.LoginPath = "/Account/Login";
+                })
+                .AddFacebook(o =>
+                {
+                    o.AppId = "YOUR APP ID";
+                    o.AppSecret = "YOUR APP SECRET";
+                    o.SignInScheme = IdentityConstants.ExternalScheme;
                 });
 
             services.AddSingleton<IEmailSender, EmailSender>();

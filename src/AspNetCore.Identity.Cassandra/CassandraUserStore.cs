@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Security.Claims;
-using System.Threading;
-using System.Threading.Tasks;
-using AspNetCore.Identity.Cassandra.Extensions;
+﻿using AspNetCore.Identity.Cassandra.Extensions;
 using AspNetCore.Identity.Cassandra.Models;
 using Cassandra;
 using Cassandra.Data.Linq;
@@ -13,6 +6,12 @@ using Cassandra.Mapping;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace AspNetCore.Identity.Cassandra
 {
@@ -87,10 +86,10 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
-            if (login == null)
+            if (login is null)
                 throw new ArgumentNullException(nameof(login));
 
             user.AddLogin(login);
@@ -102,13 +101,13 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
-            if (loginProvider == null)
+            if (loginProvider is null)
                 throw new ArgumentNullException(nameof(loginProvider));
 
-            if (providerKey == null)
+            if (providerKey is null)
                 throw new ArgumentNullException(nameof(providerKey));
 
             user.RemoveLogin(loginProvider, providerKey);
@@ -120,28 +119,26 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             return Task.FromResult<IList<UserLoginInfo>>(user.Logins.Select(x => new UserLoginInfo(x.LoginProvider, x.ProviderKey, x.ProviderDisplayName)).ToList());
         }
 
-        public async Task<TUser> FindByLoginAsync(string loginProvider, string providerKey, CancellationToken cancellationToken)
+        public Task<TUser> FindByLoginAsync(string loginProvider, string providerKey, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (loginProvider == null)
+            if (loginProvider is null)
                 throw new ArgumentNullException(nameof(loginProvider));
 
-            if (providerKey == null)
+            if (providerKey is null)
                 throw new ArgumentNullException(nameof(providerKey));
 
-            var query = from user in Session.GetTable<TUser>()
-                        where user.Logins.Any(x => x.LoginProvider == loginProvider && x.ProviderKey == providerKey)
-                        select user;
-
-            return await query.FirstOrDefault().ExecuteAsync();
+            return _mapper.SingleOrDefaultAsync<TUser>(
+                "WHERE logins CONTAINS {loginprovider: ?, providerkey: ?, providerdisplayname: ?} ALLOW FILTERING",
+                loginProvider, providerKey, loginProvider);
         }
 
         #endregion
@@ -153,7 +150,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             return Task.FromResult(user.Id.ToString());
@@ -164,7 +161,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             return Task.FromResult(user.UserName);
@@ -175,7 +172,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             user.UserName = userName ?? throw new ArgumentNullException(nameof(userName));
@@ -187,7 +184,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             return Task.FromResult(user.NormalizedUserName);
@@ -198,7 +195,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             user.NormalizedUserName = normalizedName;
@@ -210,7 +207,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             return _mapper.TryInsertAsync(user, _snapshot.AsCqlQueryOptions(), CassandraErrorDescriber, _logger);
@@ -221,7 +218,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             user.CleanUp();
@@ -233,7 +230,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             return _mapper.TryDeleteAsync(user, _snapshot.AsCqlQueryOptions(), CassandraErrorDescriber, _logger);
@@ -271,7 +268,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             return Task.FromResult(user.PasswordHash);
@@ -282,7 +279,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             return Task.FromResult(!string.IsNullOrEmpty(user.PasswordHash));
@@ -297,7 +294,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             user.SecurityStamp = stamp;
@@ -309,7 +306,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             return Task.FromResult(user.SecurityStamp);
@@ -324,7 +321,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             user.Phone = phoneNumber;
@@ -336,7 +333,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             return Task.FromResult(user.Phone?.Number);
@@ -347,10 +344,10 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
-            if (user.Phone == null)
+            if (user.Phone is null)
                 throw new InvalidOperationException("Cannot get the confirmation status of the phone number since the user doesn't have a phone number.");
 
             return Task.FromResult(user.Phone.IsConfirmed);
@@ -361,10 +358,10 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
-            if (user.Phone == null)
+            if (user.Phone is null)
                 throw new InvalidOperationException("Cannot set the confirmation status of the phone number since the user doesn't have a phone number.");
 
             user.Phone.ConfirmationTime = confirmed
@@ -383,7 +380,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             user.Email = email;
@@ -395,7 +392,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             return Task.FromResult(user.Email);
@@ -406,7 +403,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             return Task.FromResult(user.EmailConfirmed);
@@ -417,7 +414,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             user.EmailConfirmationTime = confirmed
@@ -440,7 +437,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             return Task.FromResult(user.NormalizedEmail);
@@ -451,7 +448,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             user.NormalizedEmail = normalizedEmail;
@@ -467,7 +464,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             user.AddRole(roleName);
@@ -479,7 +476,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             user.RemoveRole(roleName);
@@ -491,7 +488,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             return Task.FromResult<IList<string>>(user.Roles.ToList());
@@ -502,7 +499,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             return Task.FromResult(user.Roles.Contains(roleName));
@@ -525,7 +522,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             user.TwoFactorEnabled = enabled;
@@ -537,7 +534,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             return Task.FromResult(user.TwoFactorEnabled);
@@ -568,10 +565,10 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
-            if (code == null)
+            if (code is null)
                 throw new ArgumentNullException(nameof(code));
 
             var mergedCodes = await GetTokenAsync(user, InternalLoginProvider, RecoveryCodeTokenName, cancellationToken) ?? "";
@@ -589,7 +586,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             var mergedCodes = await GetTokenAsync(user, InternalLoginProvider, RecoveryCodeTokenName, cancellationToken) ?? "";
@@ -607,7 +604,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             return Task.FromResult(user.Lockout?.EndDate);
@@ -618,10 +615,10 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
-            if (user.Lockout == null)
+            if (user.Lockout is null)
                 user.Lockout = new LockoutInfo();
 
             user.Lockout.EndDate = lockoutEnd;
@@ -633,10 +630,10 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
-            if (user.Lockout == null)
+            if (user.Lockout is null)
                 user.Lockout = new LockoutInfo();
 
             var newAccessFailedCount = ++user.Lockout.AccessFailedCount;
@@ -648,7 +645,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             if (user.Lockout != null)
@@ -662,7 +659,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             return Task.FromResult(user.Lockout?.AccessFailedCount ?? 0);
@@ -673,7 +670,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             return Task.FromResult(user.Lockout != null && user.Lockout.Enabled);
@@ -684,10 +681,10 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
-            if (user.Lockout == null)
+            if (user.Lockout is null)
                 user.Lockout = new LockoutInfo();
 
             user.Lockout.Enabled = enabled;
@@ -703,13 +700,13 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             var options = _snapshot.Value;
             var ps = await Session.PrepareAsync($"SELECT * FROM {options.KeyspaceName}.userclaims WHERE userid = ?");
             var statement = ps.Bind(user.Id);
-            
+
             var rs = await Session.ExecuteAsync(statement);
             return rs
                 .Select(x => new Claim(x.GetValue<string>("type"), x.GetValue<string>("value")))
@@ -721,7 +718,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             var options = _snapshot.Value;
@@ -743,7 +740,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             var options = _snapshot.Value;
@@ -765,7 +762,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             var options = _snapshot.Value;
@@ -828,7 +825,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             user.RemoveToken(loginProvider, name);
@@ -841,7 +838,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (user == null)
+            if (user is null)
                 throw new ArgumentNullException(nameof(user));
 
             var token = user.Tokens.SingleOrDefault(x => x.LoginProvider == loginProvider && x.Name == name);

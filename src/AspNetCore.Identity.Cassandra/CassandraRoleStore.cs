@@ -77,7 +77,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (role == null)
+            if (role is null)
                 throw new ArgumentNullException(nameof(role));
 
             var options = _snapshot.Value;
@@ -116,7 +116,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (role == null)
+            if (role is null)
                 throw new ArgumentNullException(nameof(role));
 
             var options = _snapshot.Value;
@@ -142,7 +142,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (role == null)
+            if (role is null)
                 throw new ArgumentNullException(nameof(role));
 
             return Task.FromResult(role.Id.ToString());
@@ -153,7 +153,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (role == null)
+            if (role is null)
                 throw new ArgumentNullException(nameof(role));
 
             return Task.FromResult(role.Name);
@@ -164,7 +164,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (role == null)
+            if (role is null)
                 throw new ArgumentNullException(nameof(role));
 
             role.Name = roleName;
@@ -176,7 +176,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (role == null)
+            if (role is null)
                 throw new ArgumentNullException(nameof(role));
 
             return Task.FromResult(role.NormalizedName);
@@ -187,7 +187,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (role == null)
+            if (role is null)
                 throw new ArgumentNullException(nameof(role));
 
             role.NormalizedName = normalizedName;
@@ -215,7 +215,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (role == null)
+            if (role is null)
                 throw new ArgumentNullException(nameof(role));
 
             var options = _snapshot.Value;
@@ -233,7 +233,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (role == null)
+            if (role is null)
                 throw new ArgumentNullException(nameof(role));
 
             var options = _snapshot.Value;
@@ -248,7 +248,7 @@ namespace AspNetCore.Identity.Cassandra
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            if (role == null)
+            if (role is null)
                 throw new ArgumentNullException(nameof(role));
 
             var options = _snapshot.Value;
