@@ -12,7 +12,7 @@ namespace AspNetCore.Identity.Cassandra.Extensions
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddCassandra(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddCassandra(this IServiceCollection services, IConfiguration configuration, Action<ISession> sessionCallback = null)
         {
             services.Configure<CassandraOptions>(configuration.GetSection("Cassandra"));
             services.AddSingleton(x => x.GetRequiredService<IOptions<CassandraOptions>>().Value);
@@ -56,6 +56,8 @@ namespace AspNetCore.Identity.Cassandra.Extensions
 
                     if (session is null)
                         throw new ApplicationException("FATAL ERROR: Cassandra session could not be created");
+
+                    sessionCallback?.Invoke(session);
 
                     logger.LogInformation("Cassandra session created");
                     return session;
